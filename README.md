@@ -156,7 +156,7 @@ artifact itself.
 
 ## 12. Credits & license
 
-* Built by **Team 4 Idiots** — Nimish Gupta, Aryan Pandey, Sparsh Maurya, Naimish — for DataForge 2026 (IIT Kharagpur), Pathway track.
-* Code in this repository: **[CHOOSE A LICENSE — e.g. MIT]**.
-* Written content (README, page copy, concept summary): **[CHOOSE A LICENSE — e.g. CC BY 4.0]**.
-* Not affiliated with or endorsed by Pathway; independent educational reimplementation.
+- Built by **Team 4 Idiots** — Nimish Gupta, Aryan Pandey, Sparsh Maurya, Naimish — for DataForge 2026 (IIT Kharagpur), Pathway track.
+- Code in this repository: **MIT License**.
+- Written content (README, page copy, concept summary): **CC BY 4.0**.
+- Not affiliated with or endorsed by Pathway; independent educational reimplementation.
