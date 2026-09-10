@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Synapse, Many Memories — an associative memory explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171C; --panel:#1B1F27; --panel-2:#20242D; --ink:#E7E4DA; --ink-dim:#9BA1AC;
+    --amber:#D9A441; --teal:#4FB6A8; --rose:#C97B84; --line:#2A2F3A;
+  }
+  *{box-sizing:border-box; min-width:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Spectral', serif; font-weight:500; letter-spacing:0.2px; margin:0 0 .5em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  a{color:var(--teal);}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  section{padding:60px 0; border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  canvas{max-width:100%; height:auto; display:block;}
+  img{max-width:100%;}
+
+  /* NAV */
+  .topnav{
+    position:sticky; top:0; z-index:20; background:rgba(20,23,28,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); padding:12px 0;
+  }
+  .topnav .inner{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .navpill{
+    font-size:0.8rem; color:var(--ink-dim); border:1px solid var(--line); border-radius:20px;
+    padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .navpill.current{color:var(--amber); border-color:var(--amber);}
+  .navpill:hover{border-color:var(--ink-dim);}
+
+  /* HERO */
+  .hero{padding-top:52px;}
+  .kicker{color:var(--ink-dim); font-size:0.9rem; margin-bottom:18px;}
+  .hero h1{font-size:2.2rem; max-width:20ch; font-style:italic; line-height:1.28;}
+  .hero p.lede{font-size:1.03rem; color:var(--ink-dim); max-width:62ch; margin-bottom:24px;}
+  .hero p.lede strong.claim{color:var(--rose); font-weight:600; font-style:normal;}
+  .btn{
+    display:inline-block; background:var(--amber); color:#14171C; font-weight:600;
+    border:none; padding:12px 22px; border-radius:3px; cursor:pointer; font-size:0.95rem;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn:disabled{opacity:0.4; cursor:not-allowed;}
+
+  .meta-strip{
+    margin-top:20px; display:flex; gap:24px; flex-wrap:wrap; font-size:0.82rem; color:var(--ink-dim);
+    border:1px solid var(--line); border-radius:6px; padding:16px 20px; background:var(--panel);
+  }
+  .meta-strip div strong{color:var(--ink); display:block; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; font-weight:600;}
+
+  .preset-strip{
+    margin-top:22px; background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    padding:20px 24px; display:flex; gap:28px; flex-wrap:wrap; align-items:center;
+  }
+  .preset-strip .stat{min-width:110px;}
+  .preset-strip .stat .num{font-family:'IBM Plex Mono'; font-size:1.6rem; color:var(--teal);}
+  .preset-strip .stat .lab{font-size:0.78rem; color:var(--ink-dim); text-transform:none;}
+
+  /* mini objective callout */
+  .objective{
+    border:1px solid var(--line); border-left:3px solid var(--teal); background:var(--panel);
+    padding:12px 16px; border-radius:4px; font-size:0.85rem; margin-bottom:22px; color:var(--ink-dim);
+  }
+  .objective strong{color:var(--teal); text-transform:uppercase; font-size:0.72rem; letter-spacing:0.6px; display:block; margin-bottom:4px;}
+
+  /* GRIDS */
+  .vecgrid{display:grid; gap:2px; max-width:340px;}
+  .cell{
+    aspect-ratio:1; border-radius:2px; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono'; font-size:0.62rem; color:#14171C; font-weight:500;
+  }
+  .cell.pos{background:var(--amber);}
+  .cell.neg{background:var(--teal);}
+
+  .pair-row{display:flex; gap:24px; align-items:center; flex-wrap:wrap; margin:18px 0;}
+  .pair-label{font-size:0.82rem; color:var(--ink-dim); width:100%; margin-bottom:-6px;}
+
+  figure{margin:28px 0 8px;}
+  figcaption{font-size:0.84rem; color:var(--ink-dim); margin-top:8px;}
+
+  .eq{
+    font-family:'IBM Plex Mono'; background:var(--panel); border:1px solid var(--line);
+    border-left:3px solid var(--amber); padding:14px 18px; border-radius:4px; font-size:0.92rem;
+    overflow-x:auto;
+  }
+
+  /* STEPPER */
+  .stepper-shell{border:1px solid var(--line); border-radius:6px; background:var(--panel); padding:24px; margin-top:20px;}
+  .stepper-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+  .dots{display:flex; gap:6px;}
+  .dot{width:26px; height:4px; border-radius:2px; background:var(--line);}
+  .dot.done{background:var(--teal);}
+  .dot.active{background:var(--amber);}
+  .skiplink{font-size:0.8rem; color:var(--ink-dim); background:none; border:none; cursor:pointer;}
+  .step-body{display:grid; grid-template-columns:1fr; gap:22px;}
+  @media(min-width:800px){ .step-body{grid-template-columns:0.95fr 1fr;} }
+  .watch-cell{
+    margin-top:14px; font-size:0.82rem; padding:10px 14px; border-radius:4px; border:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  .watch-cell .val{font-family:'IBM Plex Mono'; color:var(--amber); font-size:1rem;}
+  .step-nav{display:flex; gap:10px; margin-top:20px;}
+
+  /* SANDBOX */
+  .lab{display:grid; grid-template-columns:1fr; gap:20px; margin-top:24px;}
+  @media(min-width:900px){ .lab{grid-template-columns: 0.85fr 1.15fr;} }
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:20px;}
+  .panel h3{font-size:1rem; color:var(--ink); font-family:'IBM Plex Sans'; text-transform:none; margin-bottom:14px;}
+  .panel h4{font-size:0.85rem; color:var(--ink-dim); font-weight:500; text-transform:none; margin:16px 0 8px;}
+
+  .ctrl{margin-bottom:16px;}
+  .ctrl label{display:flex; justify-content:space-between; font-size:0.85rem; color:var(--ink-dim); margin-bottom:4px;}
+  .ctrl label .val{color:var(--amber); font-family:'IBM Plex Mono';}
+  .ctrl .hint{font-size:0.74rem; color:var(--ink-dim); margin-top:3px; opacity:0.8;}
+  input[type=range]{width:100%; accent-color:var(--amber);}
+
+  .heatmap-wrap{overflow:hidden;}
+  #sandboxHeatmap{margin:0 auto;}
+
+  .pattern-list{display:flex; flex-direction:column; gap:6px; max-height:150px; overflow-y:auto; margin-top:6px;}
+  .pattern-item{
+    display:flex; align-items:center; gap:10px; font-size:0.8rem; padding:5px 8px;
+    border-radius:4px; border:1px solid var(--line); background:var(--panel-2);
+  }
+  .swatch-row{display:flex; gap:1px; flex-wrap:wrap; max-width:120px;}
+  .swatch{width:5px; height:12px;}
+  .swatch.pos{background:var(--amber);} .swatch.neg{background:var(--teal);}
+
+  .mini-cards{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px; margin-top:12px;}
+  .mini-card{border:1px solid var(--line); border-radius:5px; padding:10px; background:var(--panel-2);}
+  .mini-card .accn{font-family:'IBM Plex Mono'; font-size:1rem;}
+  .mini-card .lbl{font-size:0.72rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:0.4px;}
+  .mini-card .grids{display:flex; gap:8px; margin-top:6px;}
+  .mini-card .grids .vecgrid{max-width:70px;}
+
+  #curveCanvas{width:100%; height:auto; margin-top:6px;}
+  .legend{display:flex; gap:16px; font-size:0.76rem; color:var(--ink-dim); margin-top:6px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:12px; height:2px; display:inline-block;}
+
+  /* BDH module */
+  .side-by-side{display:grid; grid-template-columns:1fr; gap:18px;}
+  @media(min-width:760px){ .side-by-side{grid-template-columns:1fr 1fr;} }
+  .side-by-side .panel h4{margin:0 0 10px; font-size:0.88rem; color:var(--ink-dim); font-weight:500; text-transform:none;}
+
+  .callout{
+    border:1px solid var(--line); border-left:3px solid var(--rose); background:var(--panel);
+    padding:16px 18px; border-radius:4px; font-size:0.92rem; margin:20px 0;
+  }
+  .callout.good{border-left-color:var(--teal);}
+  .callout.amber{border-left-color:var(--amber);}
+
+  table.evidence{width:100%; min-width:480px; border-collapse:collapse; margin-top:16px; font-size:0.82rem;}
+  table.evidence th{background:var(--panel-2); color:var(--ink); text-align:left; padding:8px 10px; border:1px solid var(--line); font-weight:600;}
+  table.evidence td{padding:8px 10px; border:1px solid var(--line); color:var(--ink-dim); vertical-align:top;}
+  table.evidence td.tag{font-family:'IBM Plex Mono'; font-size:0.72rem; white-space:nowrap;}
+  .tag-dev{color:var(--amber);} .tag-indep{color:var(--teal);} .tag-theory{color:var(--ink-dim);}
+
+  ul.tight{padding-left:20px; margin:10px 0;}
+  ul.tight li{margin-bottom:8px;}
+
+  textarea{
+    width:100%; min-height:90px; background:var(--panel-2); color:var(--ink); border:1px solid var(--line);
+    border-radius:4px; padding:12px; font-family:'IBM Plex Sans'; font-size:0.92rem; resize:vertical;
+  }
+  .reveal-box{margin-top:14px; padding:14px 16px; border-radius:4px; border:1px solid var(--line); background:var(--panel-2); font-size:0.88rem; display:none;}
+  .reveal-box.shown{display:block;}
+
+  footer{padding:40px 0 80px; font-size:0.82rem; color:var(--ink-dim);}
+  footer a{color:var(--ink-dim); text-decoration:underline;}
+  .small{font-size:0.82rem; color:var(--ink-dim);}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap inner">
+    <a class="navpill current" href="#top">● Interactive Explainer — DataForge 2026</a>
+    <a class="navpill" href="dataforge-concept-summary.pdf" target="_blank" rel="noopener">📄 Read Concept Summary (PDF)</a>
+    <a class="navpill" href="#" onclick="return false;" title="Add your repo URL before submitting">🔗 GitHub Repo — add link</a>
+  </div>
+</nav>
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="kicker">An interactive explainer · associative memory & synaptic plasticity</div>
+    <h1>One synapse can hold many memories — until it can't.</h1>
+    <p class="lede">A fixed-size memory can store several associations by summing them into the same weights.
+    It doesn't fail all at once: as more associations share the same synapses, or as stored keys become more
+    alike, <strong class="claim">retrieval degrades smoothly because of interference</strong>, not catastrophic
+    collapse. Every number below is computed live in your browser.</p>
+    <button class="btn" onclick="document.getElementById('walkthrough').scrollIntoView()">See it happen →</button>
+    <a class="btn ghost" href="#bdh" style="margin-left:10px;">Jump to the BDH connection</a>
+
+    <div class="meta-strip">
+      <div><strong>Audience</strong>ML-curious learners comfortable with vectors & dot products</div>
+      <div><strong>Prerequisites</strong>vectors, dot product, outer product</div>
+      <div><strong>You'll be able to</strong>predict how dimension, decay & key overlap change retrieval — before you're told</div>
+    </div>
+
+    <div class="preset-strip">
+      <div class="stat"><div class="num" id="presetAcc">100%</div><div class="lab">retrieval with 3 memories stored</div></div>
+      <div class="stat"><div class="num" id="presetAcc8">—</div><div class="lab">retrieval with 8 memories stored</div></div>
+      <div class="stat"><div class="num">20</div><div class="lab">synapse dimensions, default</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="walkthrough">
+  <div class="wrap">
+    <h2>The rule, in full</h2>
+    <div class="objective"><strong>Mini-objective</strong>After this section you should be able to state the write rule and the read rule from memory, and predict what happens to one specific synapse as new memories are added.</div>
+
+    <p>Each memory is a pair: a <span style="color:var(--amber)">key</span> (the cue you'll use later to
+    ask for it back) and a <span style="color:var(--teal)">value</span> (what you actually want to
+    remember). Both are vectors of +1s and −1s.</p>
+
+    <div class="eq">write:&nbsp; M ← M + key ⊗ value &nbsp;&nbsp;(M[i][j] += key[i]·value[j] for every cell)</div>
+    <div class="eq">read:&nbsp;&nbsp; value_estimate = sign( Mᵀ · key )</div>
+
+    <div class="stepper-shell">
+      <div class="stepper-head">
+        <div class="dots" id="stepDots"></div>
+        <button class="skiplink" onclick="jumpToStep(3)">Skip walkthrough →</button>
+      </div>
+      <div class="step-body">
+        <div>
+          <div id="stepText"></div>
+          <div class="watch-cell" id="watchCell"></div>
+          <div class="step-nav">
+            <button class="btn ghost" id="prevStepBtn" onclick="prevStep()">← Back</button>
+            <button class="btn" id="nextStepBtn" onclick="nextStep()">Write next memory →</button>
+          </div>
+        </div>
+        <div>
+          <div id="walkMemories"></div>
+          <figure>
+            <div class="heatmap-wrap"><canvas id="walkHeatmap" width="320" height="320"></canvas></div>
+            <figcaption>Shared weight matrix. Amber = positive synapse, teal = negative. The highlighted cell is the one called out on the left.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sandbox">
+  <div class="wrap">
+    <h2>The lab: overload it yourself</h2>
+    <div class="objective"><strong>Mini-objective</strong>After this section you should be able to predict, before moving a slider, whether increasing dimension, adding decay, or correlating keys will make interference better or worse — and say why in terms of signal vs. noise.</div>
+    <p class="small">Every control maps to one real variable in the write/read rule above. Nothing here is precomputed — sliders trigger a fresh simulation each time.</p>
+
+    <div class="lab">
+      <div class="panel">
+        <h3>Sandbox controls</h3>
+        <div class="ctrl">
+          <label>Dimension d <span class="val" id="dimVal">20</span></label>
+          <input type="range" id="dimSlider" min="8" max="64" step="4" value="20">
+          <div class="hint">Size of the matrix (d×d). Larger d → more room before synapses collide.</div>
+        </div>
+        <div class="ctrl">
+          <label>Decay λ (forgetting factor) <span class="val" id="decayVal">1.00</span></label>
+          <input type="range" id="decaySlider" min="50" max="100" step="1" value="100">
+          <div class="hint">1.00 = no forgetting. Lower values shrink older writes every time a new one arrives.</div>
+        </div>
+        <div class="ctrl">
+          <label>Key correlation <span class="val" id="corrVal">0%</span></label>
+          <input type="range" id="corrSlider" min="0" max="90" step="5" value="0">
+          <div class="hint">0% = independent keys. Higher = keys drawn more alike, the way similar inputs would look.</div>
+        </div>
+        <div class="ctrl">
+          <label>Cue noise (bits flipped) <span class="val" id="noiseVal">0%</span></label>
+          <input type="range" id="noiseSlider" min="0" max="100" step="5" value="0">
+          <div class="hint">Noise applied to every query cue below.</div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:6px;">
+          <button class="btn" id="addBtn" style="flex:1;">+ Add memory</button>
+          <button class="btn ghost" id="removeBtn" style="flex:1;">− Remove</button>
+        </div>
+        <button class="btn ghost" id="resetBtn" style="width:100%; margin-top:8px;">Reset memory bank</button>
+        <p class="small" style="margin-top:8px;" id="countLabel">0 memories stored (cap 40)</p>
+
+        <h4>Memory bank</h4>
+        <div class="pattern-list" id="patternList"></div>
+        <div class="heatmap-wrap" style="margin-top:16px;">
+          <canvas id="sandboxHeatmap" width="320" height="320"></canvas>
+        </div>
+        <div class="legend"><span><i style="background:var(--amber)"></i>positive</span><span><i style="background:var(--teal)"></i>negative</span></div>
+      </div>
+
+      <div class="panel">
+        <h3>Retrieval: truth vs. estimate</h3>
+        <p class="small">Every stored memory, queried at once, with the current cue-noise setting applied.</p>
+        <div class="mini-cards" id="miniCards"></div>
+
+        <h3 style="margin-top:28px;">Capacity curve</h3>
+        <p class="small">Average retrieval accuracy vs. number of memories stored, computed live over fresh trials at the current dimension and decay.</p>
+        <canvas id="curveCanvas" width="560" height="220"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--teal)"></i>orthogonal keys (baseline)</span>
+          <span id="corrLegend" style="display:none;"><i style="background:var(--rose)"></i>current correlation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px;">
+      <strong>No hidden limits:</strong> unnormalized Hebbian sums, bipolar vectors, no cleanup network. Real
+      associative-memory systems add normalization, sparsity or a cleanup step to push capacity further — the
+      interference you're seeing here is the raw phenomenon underneath those fixes.
+    </div>
+  </div>
+</section>
+
+<section id="bdh">
+  <div class="wrap">
+    <h2>Where this shows up in BDH</h2>
+    <div class="objective"><strong>Mini-objective</strong>After this section you should be able to name where the Hebbian write rule appears inside BDH, what's different there (sparsity, locality, graph structure vs. a flat matrix), and which claims are developer-reported vs. independently checked.</div>
+
+    <p>Pathway's <em>Dragon Hatchling</em> (BDH) doesn't use this mechanism as an analogy — it's built from
+    it. In BDH, attention itself is reported to emerge from local neuron-particle interactions whose synapses
+    are updated with a Hebbian rule: co-active neurons strengthen the connection between them, the same
+    outer-product write above, distributed across a scale-free network instead of one dense matrix.</p>
+
+    <div class="side-by-side" style="margin:22px 0;">
+      <div class="panel">
+        <h4>This sandbox's write/read rule</h4>
+        <div class="eq" style="border-left-color:var(--teal);">
+M ← λM + key ⊗ value
+value_est = sign(Mᵀ · key)
+        </div>
+        <p class="small">Dense and global: every cell can be touched by every memory, and every key can bind to any value. λ adds forgetting but not sparsity or locality.</p>
+      </div>
+      <div class="panel">
+        <h4>BDH's Hebbian synapse update</h4>
+        <div class="eq">
+synapse(i,j) strengthens when
+neuron i and neuron j are
+co-active — a local, sparse
+write over a scale-free
+particle graph
+        </div>
+        <p class="small">Sparse and local: each neuron only writes to its graph neighbors, and activity itself is sparse, so far fewer synapses compete for the same signal at once.</p>
+      </div>
+    </div>
+
+    <div class="callout amber">
+      <strong>A connection worth stating carefully:</strong> sparsity acts like a lever on the same interference
+      you just controlled with the correlation slider. Two sparse activation patterns are, on average, far less
+      likely to overlap than two dense ones — so sparse activity effectively lowers the "correlation" between
+      the representations competing for the same synapses, which pushes the capacity cliff further out. This
+      structural link between sparsity and memory capacity is studied directly in modern Hopfield network
+      research (Hu et al., "On Sparse Modern Hopfield Model," NeurIPS 2023) — it is not a specific measured BDH
+      number, so I'm not stating one for BDH itself.
+    </div>
+
+    <p>What's actually changing in each case is the same category of object — <strong>synaptic state</strong>,
+    not the model's trained "slow" weights. In this sandbox that's the matrix <span class="mono">M</span>; in
+    BDH it's the graph's synapse strengths, updated continually as the model processes a sequence. That's also
+    why BDH-CQ, a later system in the same family, can adapt to a new task from a handful of demonstrations
+    with no gradient update: the demonstrations rewrite synaptic/contextual memory, not the model's parameters
+    — the same write-then-read pattern from the sandbox, at a very different scale.</p>
+
+    <div class="callout good">
+      <strong>What this demo is, and isn't:</strong> the matrix above is an independent toy reimplementation
+      built to make the write/read rule visible and small enough to overload by hand. It is not the official
+      BDH model, does not reproduce BDH's reported benchmark numbers, and does not include BDH's sparsity,
+      locality, or scale.
+    </div>
+
+    <h3 style="margin-top:30px;">Specific claims & evidence levels</h3>
+    <div style="overflow-x:auto;">
+    <table class="evidence">
+      <tr><th>Claim</th><th>Evidence level</th><th>Source</th></tr>
+      <tr><td>Sandbox retrieval degrades smoothly as memories/correlation increase</td><td class="tag tag-indep">live-computed, this page</td><td>—</td></tr>
+      <tr><td>BDH attention emerges from local Hebbian synapse updates on a sparse graph</td><td class="tag tag-dev">developer-reported</td><td>Pathway, arXiv:2509.26507</td></tr>
+      <tr><td>BDH-CQ reaches 29.5% pass@2 on ARC-AGI-1 at ~$0.0007/task with no weight updates</td><td class="tag tag-indep">independently re-tested</td><td>Pathway arXiv:2608.09888; Bielik AI &amp; NYU reproduction</td></tr>
+      <tr><td>Sparse activity lowers effective key correlation, pushing the capacity cliff out</td><td class="tag tag-indep">independently studied (not BDH-specific)</td><td>Hu et al., "On Sparse Modern Hopfield Model," NeurIPS 2023</td></tr>
+      <tr><td>Optimal associative-memory capacity is a well-characterized, actively studied bound</td><td class="tag tag-indep">peer-reviewed theory</td><td>Hu, Wu &amp; Liu, arXiv:2410.23126, NeurIPS 2024</td></tr>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>One limitation worth remembering</h2>
+    <p>This demo makes interference feel gradual and manageable at moderate dimension and a dozen or two
+    patterns. That's the point being taught — but it's easy to over-generalize. A common misconception is that
+    "the model just remembers more as it gets bigger," as if capacity scales for free. It doesn't: capacity
+    here scales with dimensionality relative to how many associations are packed in and how correlated they
+    are, not with size alone. A larger BDH network has more neurons and synapses to distribute writes across,
+    but the same superposition trade-off is still operating underneath — just harder to see directly at scale.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>🎯 60-second self-check</h2>
+    <p class="small">Ungraded — this is for you, not for a score.</p>
+    <div class="callout amber">
+      <strong>Prediction challenge:</strong> imagine doubling the dimension d in the sandbox above (e.g. from
+      20 to 40) while keeping the number of stored memories, decay and correlation exactly as they are now.
+      Will retrieval accuracy at your current memory count go up, down, or stay about the same — and why?
+    </div>
+    <textarea id="predictBox" placeholder="I think accuracy will..."></textarea>
+    <button class="btn" style="margin-top:12px;" onclick="revealPrediction()">Reveal the answer →</button>
+    <div class="reveal-box" id="revealBox"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Explain it back</h2>
+    <p class="small">In one or two sentences: why does adding more memories to this matrix make retrieval
+    worse, and why doesn't it fail all at once? (Not graded or sent anywhere — just for you.)</p>
+    <textarea placeholder="Type your explanation here..."></textarea>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Sources.</strong> Pathway, <a href="https://arxiv.org/pdf/2509.26507" target="_blank" rel="noopener">"The Dragon Hatchling: The Missing Link between the Transformer and Models of the Brain"</a> (arXiv:2509.26507, 2025). Pathway, <a href="https://arxiv.org/html/2608.09888v1" target="_blank" rel="noopener">"BDH-CQ: In-Context Learning with Recurrent Latent Reasoning"</a> (arXiv:2608.09888, 2026). Hu, Yang, Wu, Xu, Chen & Liu, <a href="https://arxiv.org/abs/2309.12673" target="_blank" rel="noopener">"On Sparse Modern Hopfield Model"</a>, NeurIPS 2023. Hu, Wu & Liu, <a href="https://arxiv.org/abs/2410.23126" target="_blank" rel="noopener">"Provably Optimal Memory Capacity for Modern Hopfield Models: Transformer-Compatible Dense Associative Memories as Spherical Codes"</a>, NeurIPS 2024. Classical associative memory: Anderson (1972), Kohonen (1972), Hopfield (1982) on correlation-matrix and associative neural networks.</p>
+    <p>Built for the DataForge 2026 Pathway track (Explain the Frontier). Independent, simplified reimplementation for teaching purposes — not an official Pathway product. <span id="aiDisclosure">AI-assisted build — see README for disclosure.</span></p>
+  </div>
+</footer>
+
+<script>
+// ---------- core vector / memory utilities (dimension-aware) ----------
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function randBipolar(n, rfn){ return Array.from({length:n}, () => rfn() < 0.5 ? -1 : 1); }
+function correlatedKey(n, template, corr, rfn){
+  return Array.from({length:n}, (_, i) => rfn() < corr ? template[i] : (rfn()<0.5?-1:1));
+}
+function zeroMatrix(n){ return Array.from({length:n}, () => new Array(n).fill(0)); }
+function decayMatrix(M, n, lam){ if(lam===1) return; for(let i=0;i<n;i++) for(let j=0;j<n;j++) M[i][j]*=lam; }
+function outerAdd(M, key, value, n){ for(let i=0;i<n;i++) for(let j=0;j<n;j++) M[i][j]+=key[i]*value[j]; }
+function sign(x){ return x >= 0 ? 1 : -1; }
+function readMemory(M, key, n){
+  const out = new Array(n).fill(0);
+  for(let j=0;j<n;j++){ let s=0; for(let i=0;i<n;i++) s += M[i][j]*key[i]; out[j]=sign(s); }
+  return out;
+}
+function noisy(vec, pct, rfn){ return vec.map(v => (rfn()*100 < pct) ? -v : v); }
+function accuracy(a,b){ let c=0; for(let i=0;i<a.length;i++) if(a[i]===b[i]) c++; return c/a.length; }
+
+function drawGrid(container, vec){
+  container.innerHTML = "";
+  container.className = "vecgrid";
+  const cols = Math.min(10, Math.ceil(Math.sqrt(vec.length))*2 > 10 ? 10 : Math.ceil(Math.sqrt(vec.length)));
+  container.style.gridTemplateColumns = `repeat(${Math.max(4, Math.min(10, Math.ceil(Math.sqrt(vec.length))))}, 1fr)`;
+  vec.forEach(v=>{
+    const d = document.createElement("div");
+    d.className = "cell " + (v>0?"pos":"neg");
+    container.appendChild(d);
+  });
+}
+function drawHeatmap(canvas, M, n, highlight){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const cell = w/n;
+  let max = 1;
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++) max = Math.max(max, Math.abs(M[i][j]));
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      const val = M[i][j];
+      const t = Math.min(1, Math.abs(val)/max);
+      let color;
+      if(val === 0){ color = "#20242D"; }
+      else if(val > 0){ color = `rgba(217,164,65,${0.15+0.85*t})`; }
+      else { color = `rgba(79,182,168,${0.15+0.85*t})`; }
+      ctx.fillStyle = color;
+      ctx.fillRect(j*cell, i*cell, cell-1, cell-1);
+    }
+  }
+  if(highlight){
+    ctx.strokeStyle = "#C97B84"; ctx.lineWidth = 2;
+    ctx.strokeRect(highlight.c*cell+1, highlight.r*cell+1, cell-2, cell-2);
+  }
+}
+
+// ================= WALKTHROUGH (stepper) =================
+const WDIM = 20;
+const walkPatterns = [
+  {key: randBipolar(WDIM, mulberry32(1)), value: randBipolar(WDIM, mulberry32(2)), label:"memory A"},
+  {key: randBipolar(WDIM, mulberry32(3)), value: randBipolar(WDIM, mulberry32(4)), label:"memory B"},
+  {key: randBipolar(WDIM, mulberry32(5)), value: randBipolar(WDIM, mulberry32(6)), label:"memory C"},
+];
+const WATCH = {r:0, c:0};
+let curStep = 0; // 0,1,2 = after writing memory A/B/C ; step index = number of memories written - 1
+const stepDots = document.getElementById("stepDots");
+for(let i=0;i<3;i++){ const d=document.createElement("div"); d.className="dot"; stepDots.appendChild(d); }
+
+function buildMatrixUpTo(step){
+  const M = zeroMatrix(WDIM);
+  for(let i=0;i<=step;i++) outerAdd(M, walkPatterns[i].key, walkPatterns[i].value, WDIM);
+  return M;
+}
+function renderStep(){
+  const M = buildMatrixUpTo(curStep);
+  // memories written so far
+  const walkMemDiv = document.getElementById("walkMemories");
+  walkMemDiv.innerHTML = "";
+  for(let i=0;i<=curStep;i++){
+    const p = walkPatterns[i];
+    const row = document.createElement("div"); row.className="pair-row";
+    const kWrap=document.createElement("div"); kWrap.innerHTML=`<div class="pair-label">${p.label} — key</div>`;
+    const kGrid=document.createElement("div"); drawGrid(kGrid,p.key); kWrap.appendChild(kGrid);
+    const vWrap=document.createElement("div"); vWrap.innerHTML=`<div class="pair-label">${p.label} — value</div>`;
+    const vGrid=document.createElement("div"); drawGrid(vGrid,p.value); vWrap.appendChild(vGrid);
+    row.appendChild(kWrap); row.appendChild(vWrap);
+    walkMemDiv.appendChild(row);
+  }
+  drawHeatmap(document.getElementById("walkHeatmap"), M, WDIM, WATCH);
+
+  // dots
+  document.querySelectorAll("#stepDots .dot").forEach((d,i)=>{
+    d.className = "dot" + (i<curStep?" done":"") + (i===curStep?" active":"");
+  });
+
+  // step text + watch cell
+  const est = readMemory(M, walkPatterns[curStep].key, WDIM);
+  const acc = Math.round(accuracy(est, walkPatterns[curStep].value)*100);
+  const cellVal = M[WATCH.r][WATCH.c];
+  let prevVal = null;
+  if(curStep>0){ const Mprev = buildMatrixUpTo(curStep-1); prevVal = Mprev[WATCH.r][WATCH.c]; }
+
+  document.getElementById("stepText").innerHTML =
+    `<p><strong>Step ${curStep+1} of 3: writing ${walkPatterns[curStep].label}</strong></p>
+     <p>Querying with ${walkPatterns[curStep].label}'s own key right after writing it gives
+     <strong style="color:var(--teal)">${acc}% retrieval accuracy</strong> — the matrix isn't crowded yet
+     relative to this one memory.</p>`;
+
+  const delta = prevVal===null ? "" : ` (was ${prevVal>0?'+':''}${prevVal}, changed by ${cellVal-prevVal>0?'+':''}${cellVal-prevVal})`;
+  document.getElementById("watchCell").innerHTML =
+    `<strong>Watch cell M[${WATCH.r}][${WATCH.c}]</strong> (outlined in rose on the heatmap): now
+     <span class="val">${cellVal>0?'+':''}${cellVal}</span>${delta}. Every memory that touches this cell
+     leaves its mark on the same number — that's interference, made visible on a single synapse.`;
+
+  document.getElementById("prevStepBtn").disabled = curStep===0;
+  document.getElementById("nextStepBtn").textContent = curStep<2 ? "Write next memory →" : "Go to the lab ↓";
+}
+function nextStep(){
+  if(curStep<2){ curStep++; renderStep(); }
+  else { document.getElementById("sandbox").scrollIntoView(); }
+}
+function prevStep(){ if(curStep>0){ curStep--; renderStep(); } }
+function jumpToStep(s){ curStep = Math.min(2,s); renderStep(); }
+renderStep();
+
+document.getElementById("presetAcc").textContent =
+  Math.round(accuracy(readMemory(buildMatrixUpTo(0), walkPatterns[0].key, WDIM), walkPatterns[0].value)*100) + "%";
+(function(){
+  let rfn = mulberry32(777), trials=30, total=0;
+  for(let t=0;t<trials;t++){
+    const M = zeroMatrix(WDIM);
+    const pats = Array.from({length:8}, () => ({key: randBipolar(WDIM, rfn), value: randBipolar(WDIM, rfn)}));
+    pats.forEach(p => outerAdd(M, p.key, p.value, WDIM));
+    total += accuracy(readMemory(M, pats[0].key, WDIM), pats[0].value);
+  }
+  document.getElementById("presetAcc8").textContent = Math.round(100*total/trials) + "%";
+})();
+
+// ================= SANDBOX =================
+let SDIM = 20, DECAY = 1.0, CORR = 0.0;
+let sandboxPatterns = [];
+let sandboxM = zeroMatrix(SDIM);
+let sbRng = mulberry32(2024);
+let template = randBipolar(SDIM, mulberry32(999));
+
+const dimSlider=document.getElementById("dimSlider"), dimVal=document.getElementById("dimVal");
+const decaySlider=document.getElementById("decaySlider"), decayVal=document.getElementById("decayVal");
+const corrSlider=document.getElementById("corrSlider"), corrVal=document.getElementById("corrVal");
+const noiseSlider=document.getElementById("noiseSlider"), noiseVal=document.getElementById("noiseVal");
+const patternListEl=document.getElementById("patternList");
+const sandboxHeatmapEl=document.getElementById("sandboxHeatmap");
+const miniCardsEl=document.getElementById("miniCards");
+const countLabel=document.getElementById("countLabel");
+
+function makeKey(rfn){ return CORR>0 ? correlatedKey(SDIM, template, CORR, rfn) : randBipolar(SDIM, rfn); }
+
+function rebuildMatrix(){
+  sandboxM = zeroMatrix(SDIM);
+  sandboxPatterns.forEach(p => {
+    decayMatrix(sandboxM, SDIM, DECAY);
+    outerAdd(sandboxM, p.key, p.value, SDIM);
+  });
+}
+function addPattern(){
+  if(sandboxPatterns.length >= 40) return;
+  const key = makeKey(sbRng), value = randBipolar(SDIM, sbRng);
+  sandboxPatterns.push({key, value});
+  rebuildMatrix();
+  renderSandbox();
+}
+function removePattern(){
+  if(sandboxPatterns.length===0) return;
+  sandboxPatterns.pop();
+  rebuildMatrix();
+  renderSandbox();
+}
+function resetSandbox(){
+  sandboxPatterns = [];
+  sandboxM = zeroMatrix(SDIM);
+  renderSandbox();
+}
+function regenerateAllPatterns(){
+  const n = sandboxPatterns.length;
+  sandboxPatterns = [];
+  for(let i=0;i<n;i++){
+    sandboxPatterns.push({key: makeKey(sbRng), value: randBipolar(SDIM, sbRng)});
+  }
+  rebuildMatrix();
+  renderSandbox();
+}
+
+function renderPatternList(){
+  patternListEl.innerHTML = "";
+  if(sandboxPatterns.length===0){
+    patternListEl.innerHTML = `<p class="small">No memories yet — click "+ Add memory".</p>`;
+    return;
+  }
+  sandboxPatterns.forEach((p, idx) => {
+    const item = document.createElement("div"); item.className="pattern-item";
+    const swRow = document.createElement("div"); swRow.className="swatch-row";
+    p.key.forEach(v=>{ const s=document.createElement("div"); s.className="swatch "+(v>0?"pos":"neg"); swRow.appendChild(s); });
+    const lab = document.createElement("span"); lab.textContent = "memory "+(idx+1);
+    item.appendChild(swRow); item.appendChild(lab);
+    patternListEl.appendChild(item);
+  });
+}
+function renderMiniCards(){
+  miniCardsEl.innerHTML = "";
+  const shown = sandboxPatterns.slice(0, 6);
+  if(shown.length===0){ miniCardsEl.innerHTML = `<p class="small">Add memories to see retrieval quality here.</p>`; return; }
+  const noisePct = Number(noiseSlider.value);
+  shown.forEach((p, idx) => {
+    const cue = noisy(p.key, noisePct, sbRng);
+    const est = readMemory(sandboxM, cue, SDIM);
+    const acc = Math.round(accuracy(est, p.value)*100);
+    const card = document.createElement("div"); card.className="mini-card";
+    const color = acc>85 ? "var(--teal)" : (acc>60 ? "var(--amber)" : "var(--rose)");
+    card.innerHTML = `<div class="lbl">memory ${idx+1}</div><div class="accn" style="color:${color}">${acc}%</div>`;
+    const gridsWrap = document.createElement("div"); gridsWrap.className="grids";
+    const trueWrap=document.createElement("div"); const trueGrid=document.createElement("div"); drawGrid(trueGrid,p.value); trueWrap.appendChild(trueGrid);
+    const estWrap=document.createElement("div"); const estGrid=document.createElement("div"); drawGrid(estGrid,est); estWrap.appendChild(estGrid);
+    gridsWrap.appendChild(trueWrap); gridsWrap.appendChild(estWrap);
+    card.appendChild(gridsWrap);
+    miniCardsEl.appendChild(card);
+  });
+  if(sandboxPatterns.length>6){
+    const more = document.createElement("p"); more.className="small"; more.style.gridColumn="1/-1";
+    more.textContent = `+ ${sandboxPatterns.length-6} more stored (showing first 6).`;
+    miniCardsEl.appendChild(more);
+  }
+}
+function pointAccuracy(dim, n, corr, decay, trials){
+  let acc=0;
+  for(let t=0;t<trials;t++){
+    const r = mulberry32(9000+t*7+dim+n*3);
+    const tmpl = randBipolar(dim, r);
+    const M = zeroMatrix(dim);
+    const pats = [];
+    for(let i=0;i<n;i++){
+      decayMatrix(M, dim, decay);
+      const k = corr>0 ? correlatedKey(dim, tmpl, corr, r) : randBipolar(dim, r);
+      const v = randBipolar(dim, r);
+      outerAdd(M, k, v, dim);
+      pats.push({key:k, value:v});
+    }
+    acc += accuracy(readMemory(M, pats[0].key, dim), pats[0].value);
+  }
+  return acc/trials;
+}
+function computeCurve(dim, corr, decay, maxN, trials){
+  const out=[];
+  for(let n=1;n<=maxN;n++) out.push(pointAccuracy(dim, n, corr, decay, trials));
+  return out;
+}
+function drawCurve(){
+  const canvas = document.getElementById("curveCanvas");
+  const ctx = canvas.getContext("2d");
+  const w=canvas.width, h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const maxN=24, trials=6;
+  const pad={l:36,r:10,t:10,b:24};
+  const plotW=w-pad.l-pad.r, plotH=h-pad.t-pad.b;
+  ctx.strokeStyle="#2A2F3A"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
+  ctx.fillStyle="#9BA1AC"; ctx.font="10px IBM Plex Mono";
+  ctx.fillText("100%", 2, pad.t+8); ctx.fillText("0%", 10, h-pad.b+4);
+  ctx.fillText("memories stored →", pad.l, h-4);
+
+  function plotLine(pts, color){
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
+    pts.forEach((a,idx)=>{
+      const x=pad.l+(idx/(maxN-1))*plotW, y=pad.t+(1-a)*plotH;
+      if(idx===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+  const baseline = computeCurve(SDIM, 0, DECAY, maxN, trials);
+  plotLine(baseline, "#4FB6A8");
+  const corrLegend = document.getElementById("corrLegend");
+  if(CORR>0.02){
+    const withCorr = computeCurve(SDIM, CORR, DECAY, maxN, trials);
+    plotLine(withCorr, "#C97B84");
+    corrLegend.style.display="inline-flex";
+  } else {
+    corrLegend.style.display="none";
+  }
+  const curN = sandboxPatterns.length;
+  if(curN>=1 && curN<=maxN){
+    const pts = CORR>0.02 ? computeCurve(SDIM, CORR, DECAY, maxN, 3) : baseline;
+    const x=pad.l+((curN-1)/(maxN-1))*plotW, y=pad.t+(1-pts[curN-1])*plotH;
+    ctx.fillStyle="#D9A441"; ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  }
+}
+function renderSandbox(){
+  renderPatternList();
+  drawHeatmap(sandboxHeatmapEl, sandboxM, SDIM);
+  renderMiniCards();
+  drawCurve();
+  countLabel.textContent = `${sandboxPatterns.length} memories stored (cap 40)`;
+}
+
+dimSlider.oninput = () => { SDIM = Number(dimSlider.value); dimVal.textContent = SDIM; template = randBipolar(SDIM, mulberry32(999+SDIM)); regenerateAllPatterns(); };
+decaySlider.oninput = () => { DECAY = Number(decaySlider.value)/100; decayVal.textContent = DECAY.toFixed(2); rebuildMatrix(); renderSandbox(); };
+corrSlider.oninput = () => { CORR = Number(corrSlider.value)/100; corrVal.textContent = corrSlider.value+"%"; regenerateAllPatterns(); };
+noiseSlider.oninput = () => { noiseVal.textContent = noiseSlider.value+"%"; renderMiniCards(); };
+document.getElementById("addBtn").onclick = addPattern;
+document.getElementById("removeBtn").onclick = removePattern;
+document.getElementById("resetBtn").onclick = resetSandbox;
+
+// seed with 3 memories so the lab isn't empty on load
+addPattern(); addPattern(); addPattern();
+
+// ================= 60-second self-check =================
+function revealPrediction(){
+  const box = document.getElementById("revealBox");
+  const n = Math.max(1, sandboxPatterns.length);
+  const accNow = Math.round(pointAccuracy(SDIM, n, CORR, DECAY, 20)*100);
+  const accDouble = Math.round(pointAccuracy(SDIM*2, n, CORR, DECAY, 20)*100);
+  box.innerHTML = `At your current settings (d=${SDIM}, ${n} memories stored, ${Math.round(CORR*100)}% correlation):
+  accuracy is about <strong style="color:var(--teal)">${accNow}%</strong>. Doubling the dimension to ${SDIM*2}
+  (same everything else) gives about <strong style="color:var(--teal)">${accDouble}%</strong>, computed just now.
+  <br><br>Why: the write rule's "signal" for the queried pattern scales with d, while the "noise" from the other
+  ${n-1} interfering patterns scales with √((n−1)·d). Growing d faster than that noise term improves the
+  signal-to-noise ratio, so accuracy goes up — degradation is a dimension-vs-crowding trade-off, not a fixed wall.`;
+  box.classList.add("shown");
+}
+</script>
+</body>
+</html>
