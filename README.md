@@ -2,8 +2,8 @@
 ### An interactive explainer on Associative Memory & Synaptic Plasticity, connected to Pathway's Dragon Hatchling (BDH)
 **DataForge 2026 — Pathway Track ("Explain the Frontier")**
 
-**Live artifact:** `PASTE-YOUR-GITHUB-PAGES-URL-HERE` *(see SUBMISSION_STEPS.md — you must host this yourself; instructions are exact)*
-**Source repository:** `PASTE-YOUR-REPO-URL-HERE`
+**Live artifact:** *(see SUBMISSION_STEPS.md — you must host this yourself; instructions are exact)*
+**Source repository:** (https://github.com/nimish-g29/dataforge-2026-associative-memory)
 **Concept summary (the "blog"):** [`dataforge-concept-summary.pdf`](./dataforge-concept-summary.pdf)
 
 ---
