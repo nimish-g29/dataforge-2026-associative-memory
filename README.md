@@ -135,22 +135,14 @@ artifact itself.
 
 ## 10. AI assistance, code, data, asset, and license disclosure
 
-- **AI assistance:** Substantial portions of the code, page copy, and this README were drafted with AI
-  assistance (Claude, Anthropic). The human author selected the topic, directed the design and content of
-  every section, tested every interactive feature by hand, requested specific corrections (including the
-  mobile-layout fix and the evidence-table overflow fix described in the commit history / conversation
-  log), and is responsible for understanding and defending every component live, per the hackathon's
-  ownership requirement.
-- **Code:** original for this submission (see §9); no forked repository.
-- **Data:** none external; all data shown is generated synthetically at runtime.
-- **Assets:** no images, icons, or media assets beyond the three Google Fonts listed in §9.
-- **License of reused BDH claims:** all BDH/BDH-CQ content is paraphrased explanation of publicly
-  published research, with primary-source citations; no BDH source code, weights, or proprietary material
-  is reproduced.
+* **AI assistance:** Substantial portions of the code, page copy, and this README were drafted with AI assistance (Claude, Anthropic). The team selected the topic, directed the design and content of every section, tested every interactive feature by hand, requested specific corrections (including the mobile-layout fix and the evidence-table overflow fix described in the commit history / conversation log), and is responsible for understanding and defending every component live, per the hackathon's ownership requirement.
+* **Code:** Original for this submission (see §9); no forked repository.
+* **Data:** None external; all data shown is generated synthetically at runtime.
+* **Assets:** No images, icons, or media assets beyond the three Google Fonts listed in §9.
+* **License of reused BDH claims:** All BDH/BDH-CQ content is paraphrased explanation of publicly published research, with primary-source citations; no BDH source code, weights, or proprietary material is reproduced.
 
-> **Before submitting:** replace this paragraph with your own first-person account of what you changed,
-> tested, and can defend — judges score "technical ownership and live defense" separately from
-> correctness, and a disclosure written entirely by AI about AI assistance undercuts that.
+> **Before submitting:** The team should ensure every member can explain the system, trace the implementation decisions, and defend the design choices during the live evaluation. Technical ownership and live defense are evaluated separately from correctness.
+
 
 ## 11. Known limitations (of the artifact itself)
 
@@ -164,7 +156,7 @@ artifact itself.
 
 ## 12. Credits & license
 
-- Built by **Team 4 Idiots** for DataForge 2026 (IIT Kharagpur), Pathway track.
-- Code in this repository: **[CHOOSE A LICENSE — e.g. MIT]**.
-- Written content (README, page copy, concept summary): **[CHOOSE A LICENSE — e.g. CC BY 4.0]**.
-- Not affiliated with or endorsed by Pathway; independent educational reimplementation.
+* Built by **Team 4 Idiots** — Nimish Gupta, Aryan Pandey, Sparsh Maurya, Naimish — for DataForge 2026 (IIT Kharagpur), Pathway track.
+* Code in this repository: **[CHOOSE A LICENSE — e.g. MIT]**.
+* Written content (README, page copy, concept summary): **[CHOOSE A LICENSE — e.g. CC BY 4.0]**.
+* Not affiliated with or endorsed by Pathway; independent educational reimplementation.
