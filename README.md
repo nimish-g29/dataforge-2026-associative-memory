@@ -37,7 +37,7 @@ By the end, a learner should be able to:
 
 ## 4. Architecture of the artifact
 
-Single self-contained HTML file (`dataforge.html`) — no backend, no build step, no external JS framework.
+Single self-contained HTML file (`index.html`) — no backend, no build step, no external JS framework.
 All computation is vanilla JavaScript running client-side; all visuals are `<canvas>` and CSS grid, drawn
 at runtime. External dependency: Google Fonts (see §10).
 
@@ -88,12 +88,12 @@ Nothing in this artifact is a scripted/faked animation standing in for real comp
 No installation, no dependencies, no build step.
 
 1. Clone or download the repo.
-2. Open `dataforge.html` directly in any modern browser (double-click, or `open dataforge.html` / drag into a
+2. Open `index.html` directly in any modern browser (double-click, or `open index.html` / drag into a
    browser window) — **or** serve it locally:
    ```bash
    cd <repo-folder>
    python3 -m http.server 8000
-   # then visit http://localhost:8000/dataforge.html
+   # then visit http://localhost:8000/index.html
    ```
 3. All numbers are computed fresh in-browser using a seeded PRNG. Reloading the page reproduces the same
    walkthrough values every time; sandbox values vary run-to-run by design (they're live simulations, not
